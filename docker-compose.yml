@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  postgres-usuario:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: usuario
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_usuario_data:/var/lib/postgresql/data
+
+  postgres-sala:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: sala
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_sala_data:/var/lib/postgresql/data
+
+  postgres-reserva:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reserva_sala_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_reserva_data:/var/lib/postgresql/data
+
+  usuario:
+    build: ./usuario
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-usuario:5432/usuario
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+    depends_on:
+      - postgres-usuario
+
+  sala:
+    build: ./sala
+    ports:
+      - "8085:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-sala:5432/sala
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+    depends_on:
+      - postgres-sala
+
+  reserva-sala:
+    build: ./reserva-sala
+    ports:
+      - "8083:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-reserva:5432/reserva_sala_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      - postgres-reserva
+      - usuario
+      - sala
+
+volumes:
+  postgres_usuario_data:
+  postgres_sala_data:
+  postgres_reserva_data:
