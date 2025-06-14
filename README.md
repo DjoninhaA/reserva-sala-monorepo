@@ -110,9 +110,3 @@ docker-compose logs -f ms-sala
 docker-compose logs -f ms-reserva
 docker-compose logs -f rabbitmq
 ```
-
-## 👨‍💻 Autor
-
-**Luiz Pagliari**
-
-- GitHub: [@LuizPagliari](https://github.com/LuizPagliari)
