@@ -1,0 +1,163 @@
+version: '3.8'
+
+services:
+  mysql-usuario:
+    image: mysql:latest
+    container_name: mysql-usuario-container
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=123
+      - MYSQL_DATABASE=db_usuario
+      - MYSQL_ROOT_PASSWORD=123
+    volumes:
+      - mysql-usuario-data:/var/lib/mysql
+    networks:
+      - net1
+
+  mysql-sala:
+    image: mysql:latest
+    container_name: mysql-sala-container
+    ports:
+      - "3308:3306"
+    environment:
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=123
+      - MYSQL_DATABASE=db_sala
+      - MYSQL_ROOT_PASSWORD=123
+    volumes:
+      - mysql-sala-data:/var/lib/mysql
+    networks:
+      - net2
+
+  mysql-reserva:
+    image: mysql:latest
+    container_name: mysql-reserva-container
+    ports:
+      - "3309:3306"
+    environment:
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=123
+      - MYSQL_DATABASE=db_reserva
+      - MYSQL_ROOT_PASSWORD=123
+    volumes:
+      - mysql-reserva-data:/var/lib/mysql
+    networks:
+      - net3
+  ms-usuario:
+    build:
+      context: ./ms-usuario
+      dockerfile: Dockerfile
+    container_name: ms-usuario-container
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-usuario:3306/db_usuario
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: 123
+    depends_on:
+      - mysql-usuario
+    restart: always
+    networks:
+      - net1
+  ms-sala:
+    build:
+      context: ./ms-sala
+      dockerfile: Dockerfile
+    container_name: ms-sala-container
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-sala:3306/db_sala
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: 123
+    depends_on:
+      - mysql-sala
+    restart: always
+    networks:
+      - net2
+  ms-reserva:
+    build:
+      context: ./ms-reserva
+      dockerfile: Dockerfile
+    container_name: ms-reserva-container
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-reserva:3306/db_reserva
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: 123
+    depends_on:
+      - mysql-reserva
+    restart: always
+    networks:
+      - net3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-container
+    ports:
+      - "3000:3000"
+    depends_on:
+      - ms-usuario
+      - ms-sala
+      - ms-reserva
+    networks:
+      - net1
+      - net2
+      - net3
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-gateway
+    command: /bin/bash -c "sleep 10 && nginx -g 'daemon off;'"
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - ms-usuario
+      - ms-sala
+      - ms-reserva
+      - frontend
+    networks:
+      - net1
+      - net2
+      - net3
+    restart: always
+    
+  adminer:
+    image: adminer
+    ports:
+      - "4040:8080"
+    networks:
+      - net1
+      - net2
+      - net3
+  
+  rabbitmq:
+    image: rabbitmq:3.7.8-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "admin"
+      RABBITMQ_DEFAULT_PASS: "admin"
+    networks:
+      - net1
+      - net2
+      - net3
+
+volumes:
+  mysql-usuario-data:
+  mysql-sala-data:
+  mysql-reserva-data:
+
+networks:
+  net1:
+  net2:
+  net3:
