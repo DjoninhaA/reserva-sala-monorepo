@@ -1,5 +1,7 @@
 # 🏢 Sistema de Controle de Salas
 
+![sistema](image.png)
+
 Sistema de gerenciamento de reservas de salas baseado em arquitetura de microserviços com comunicação assíncrona.
 
 ## 📋 Visão Geral

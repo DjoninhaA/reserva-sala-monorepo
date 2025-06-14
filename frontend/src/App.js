@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Button,
@@ -21,21 +21,18 @@ import {
   AppBar,
   Toolbar,
   Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
+  Paper,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import { ThemeProvider, createTheme, alpha } from "@mui/material/styles";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import EventAvailableIcon from "@mui/icons-material/EventAvailable";
-import SearchIcon from "@mui/icons-material/Search";
+import PersonIcon from "@mui/icons-material/Person";
+import EventIcon from "@mui/icons-material/Event";
 import AddIcon from "@mui/icons-material/Add";
-import CloseIcon from "@mui/icons-material/Close";
-import HomeIcon from "@mui/icons-material/Home";
-import TableViewIcon from "@mui/icons-material/TableView";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 // Tema com esquema de cores azul
 const theme = createTheme({
@@ -86,15 +83,6 @@ const theme = createTheme({
         },
       },
     },
-    MuiDialog: {
-      styleOverrides: {
-        paper: {
-          borderRadius: 8,
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-        },
-      },
-    },
-  },
 });
 
 const API_BASE_URL = {
@@ -109,14 +97,8 @@ export default function App() {
   const [salas, setSalas] = useState([]);
   const [reservas, setReservas] = useState([]);
 
-  // Estados para os modais
-  const [usuarioModalOpen, setUsuarioModalOpen] = useState(false);
-  const [salaModalOpen, setSalaModalOpen] = useState(false);
-  const [reservaModalOpen, setReservaModalOpen] = useState(false);
-  const [buscaCpfModalOpen, setBuscaCpfModalOpen] = useState(false);
-
   // Estados para formulários
-  const [form, setForm] = useState({
+  const [usuarioForm, setUsuarioForm] = useState({
     nome: "",
     email: "",
     cpf: "",
@@ -128,13 +110,18 @@ export default function App() {
       rua: "",
     },
   });
-  const [salaForm, setSalaForm] = useState({ nome: "", capacidade: 0 });
+  
+  const [salaForm, setSalaForm] = useState({ 
+    nome: "", 
+    capacidade: 0 
+  });
+  
   const [reservaForm, setReservaForm] = useState({
     usuarioId: "",
     salaId: "",
     dataHora: "",
   });
-  const [cpf, setCpf] = useState("");
+  
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState({
     open: false,
@@ -144,58 +131,90 @@ export default function App() {
 
   // Carregar dados quando o componente é montado
   useEffect(() => {
-    fetchData("salas", setSalas);
-    fetchData("reservas", setReservas);
-    fetchData("usuarios", setUsuarios);
-    // eslint-disable-next-line
+    fetchUsuarios();
+    fetchSalas();
+    fetchReservas();
   }, []);
 
   // Funções para buscar dados da API
-  const fetchData = async (endpoint, setter) => {
+  const fetchUsuarios = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(API_BASE_URL[endpoint]);
-      console.log(`Dados de ${endpoint} carregados com sucesso:`, res.data);
-      setter(res.data);
+      const res = await axios.get(API_BASE_URL.usuarios);
+      setUsuarios(res.data);
     } catch (error) {
-      console.error(`Erro ao buscar ${endpoint}:`, error);
-      showNotification(`Erro ao buscar ${endpoint}`, "error");
+      console.error("Erro ao buscar usuários:", error);
+      showNotification("Erro ao buscar usuários", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Funções de manipulação de formulários com useCallback para evitar re-renders desnecessários
-  const handleChange = useCallback((e) => {
+  const fetchSalas = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(API_BASE_URL.salas);
+      setSalas(res.data);
+    } catch (error) {
+      console.error("Erro ao buscar salas:", error);
+      showNotification("Erro ao buscar salas", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchReservas = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(API_BASE_URL.reservas);
+      setReservas(res.data);
+    } catch (error) {
+      console.error("Erro ao buscar reservas:", error);
+      showNotification("Erro ao buscar reservas", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Funções para lidar com mudanças nos formulários
+  const handleUsuarioChange = (e) => {
     const { name, value } = e.target;
-    setForm((prevForm) => ({
-      ...prevForm,
+    setUsuarioForm((prev) => ({
+      ...prev,
       [name]: value,
     }));
-  }, []);
+  };
 
-  const handleEnderecoChange = useCallback((e) => {
+  const handleEnderecoChange = (e) => {
     const { name, value } = e.target;
-    setForm((prevForm) => ({
-      ...prevForm,
+    setUsuarioForm((prev) => ({
+      ...prev,
       endereco: {
-        ...prevForm.endereco,
+        ...prev.endereco,
         [name]: value,
       },
     }));
-  }, []);
-
-  const showNotification = (message, severity = "success") => {
-    setNotification({ open: true, message, severity });
   };
 
-  const handleCloseNotification = () => {
-    setNotification({ ...notification, open: false });
+  const handleSalaChange = (e) => {
+    const { name, value } = e.target;
+    setSalaForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  // Limpar formulários
-  const clearForm = () => {
-    setForm({
+  const handleReservaChange = (e) => {
+    const { name, value } = e.target;
+    setReservaForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Funções para limpar formulários
+  const clearUsuarioForm = () => {
+    setUsuarioForm({
       nome: "",
       email: "",
       cpf: "",
@@ -217,30 +236,39 @@ export default function App() {
     setReservaForm({ usuarioId: "", salaId: "", dataHora: "" });
   };
 
-  // Submissões de formulários
+  // Notificações
+  const showNotification = (message, severity = "success") => {
+    setNotification({ open: true, message, severity });
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
+  };
+
+  // Funções de submissão de formulários
   const handleSubmitUsuario = async (e) => {
     e.preventDefault();
-    e.stopPropagation();
     setLoading(true);
     try {
+      // Ajustando o formato do payload para corresponder ao esperado pelo backend
       const payload = {
-        nome: form.nome,
-        email: form.email,
-        cpf: form.cpf || null,
-        dataNascimento: form.dataNascimento || null,
+        nome: usuarioForm.nome,
+        email: usuarioForm.email,
+        cpf: usuarioForm.cpf || "",
+        dataNascimento: usuarioForm.dataNascimento || "",
         endereco: {
-          cidade: form.endereco.cidade || null,
-          estado: form.endereco.estado || null,
-          cep: form.endereco.cep || null,
-          rua: form.endereco.rua || null,
+          cidade: usuarioForm.endereco.cidade || "",
+          estado: usuarioForm.endereco.estado || "",
+          cep: usuarioForm.endereco.cep || "",
+          rua: usuarioForm.endereco.rua || "",
         },
       };
+      
       console.log("Enviando payload:", payload);
       await axios.post(API_BASE_URL.usuarios, payload);
-      showNotification("Usuário criado com sucesso!");
-      fetchData("usuarios", setUsuarios);
-      clearForm();
-      setUsuarioModalOpen(false);
+      showNotification("Usuário cadastrado com sucesso!");
+      fetchUsuarios();
+      clearUsuarioForm();
     } catch (error) {
       console.error("Erro ao criar usuário:", error);
       showNotification(
@@ -254,24 +282,19 @@ export default function App() {
 
   const handleSubmitSala = async (e) => {
     e.preventDefault();
-    e.stopPropagation();
     setLoading(true);
     try {
-      // Criar o objeto no formato esperado pelo backend
+      // Simplificando o formato do payload para salas
       const payload = {
-        nome: {
-          nome: salaForm.nome,
-        },
-        capacidade: {
-          capacidade: parseInt(salaForm.capacidade, 10),
-        },
+        nome: salaForm.nome,
+        capacidade: parseInt(salaForm.capacidade, 10),
       };
+      
       console.log("Enviando payload sala:", payload);
       await axios.post(API_BASE_URL.salas, payload);
-      showNotification("Sala criada com sucesso!");
-      fetchData("salas", setSalas);
+      showNotification("Sala cadastrada com sucesso!");
+      fetchSalas();
       clearSalaForm();
-      setSalaModalOpen(false);
     } catch (error) {
       console.error("Erro ao criar sala:", error);
       showNotification(
@@ -293,9 +316,8 @@ export default function App() {
         dataHora: reservaForm.dataHora,
       });
       showNotification("Reserva criada com sucesso!");
-      fetchData("reservas", setReservas);
+      fetchReservas();
       clearReservaForm();
-      setReservaModalOpen(false);
     } catch (error) {
       console.error("Erro ao criar reserva:", error);
       showNotification("Erro ao criar reserva", "error");
@@ -304,106 +326,32 @@ export default function App() {
     }
   };
 
-  const handleBuscarPorCpf = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const response = await axios.get(`${API_BASE_URL.usuarios}/${cpf}`);
-      if (response.data) {
-        showNotification(
-          `Usuário encontrado: ${response.data.nome}`,
-          "success"
-        );
-      } else {
-        showNotification("Usuário não encontrado!", "warning");
-      }
-    } catch (error) {
-      console.error("Erro ao buscar usuário por CPF:", error);
-      showNotification("Erro ao buscar usuário", "error");
-    } finally {
-      setLoading(false);
-      setCpf("");
-      setBuscaCpfModalOpen(false);
-    }
-  };
-
-  // Manipuladores para evitar eventos de propagação e fechamento indevido dos modais
-  const handleCardClick = useCallback((setModalOpen) => {
-    return (e) => {
-      e.stopPropagation();
-      setModalOpen(true);
-    };
-  }, []);
-
-  const handleModalClose = useCallback((setModalState, clearFn) => {
-    return () => {
-      if (clearFn) clearFn();
-      setModalState(false);
-    };
-  }, []);
-
-  // Componente de modal modificado para evitar o problema de "piscar"
-  const ModalDialog = ({ open, onClose, title, icon, children }) => (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="md"
-      onClick={(e) => e.stopPropagation()}
-      disableEscapeKeyDown
-      hideBackdrop={false}
-      keepMounted
-    >
-      <DialogTitle
-        sx={{
-          bgcolor: theme.palette.primary.main,
-          color: "white",
-          display: "flex",
-          alignItems: "center",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {icon}
-        <Typography variant="h6" sx={{ ml: 1, flexGrow: 1 }}>
-          {title}
-        </Typography>
-        <IconButton
-          edge="end"
-          color="inherit"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          aria-label="close"
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers sx={{ p: 3 }} onClick={(e) => e.stopPropagation()}>
-        {children}
-      </DialogContent>
-    </Dialog>
-  );
-
   return (
     <ThemeProvider theme={theme}>
-      <div style={{ backgroundColor: "#f5f7ff", minHeight: "100vh" }}>
+      <Box sx={{ backgroundColor: "#f5f7ff", minHeight: "100vh", pb: 4 }}>
         {/* Barra de navegação */}
-        <AppBar
-          position="static"
-          sx={{ bgcolor: theme.palette.primary.main }}
-          elevation={0}
-        >
+        <AppBar position="static" elevation={0}>
           <Toolbar>
             <MeetingRoomIcon sx={{ mr: 2 }} />
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Sistema de Gerenciamento de Salas e Reservas
+              Sistema de Gerenciamento de Salas
             </Typography>
+            <Button 
+              color="inherit" 
+              startIcon={<RefreshIcon />}
+              onClick={() => {
+                fetchUsuarios();
+                fetchSalas();
+                fetchReservas();
+              }}
+            >
+              Atualizar
+            </Button>
           </Toolbar>
         </AppBar>
 
-        {/* Container principal */}
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Conteúdo principal */}
+        <Container maxWidth="lg" sx={{ mt: 4 }}>
           {/* Notificações */}
           <Snackbar
             open={notification.open}
@@ -420,683 +368,448 @@ export default function App() {
             </Alert>
           </Snackbar>
 
-          {/* Cards de ações principais */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} md={6}>
-              <Card
-                onClick={handleCardClick(setUsuarioModalOpen)}
-                sx={{
-                  height: "100%",
-                  cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 8px 16px rgba(63, 81, 181, 0.15)",
-                  },
+          {/* Seção de Usuários */}
+          <Paper sx={{ mb: 3, overflow: 'hidden' }}>
+            <Accordion defaultExpanded>
+              <AccordionSummary 
+                expandIcon={<ExpandMoreIcon />}
+                sx={{ 
+                  bgcolor: theme.palette.primary.main, 
+                  color: 'white',
                 }}
               >
-                <Box
-                  sx={{
-                    bgcolor: theme.palette.primary.main,
-                    color: "white",
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <PersonAddIcon sx={{ mr: 1.5 }} />
-                  <Typography variant="h6">Cadastrar Usuário</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <PersonIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6">Usuários</Typography>
                 </Box>
-                <CardContent>
-                  <Typography variant="body1" color="textSecondary">
-                    Cadastre novos usuários no sistema com informações completas como
-                    nome, email, CPF e endereço.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Card
-                onClick={handleCardClick(setSalaModalOpen)}
-                sx={{
-                  height: "100%",
-                  cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 8px 16px rgba(63, 81, 181, 0.15)",
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    bgcolor: theme.palette.primary.main,
-                    color: "white",
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <MeetingRoomIcon sx={{ mr: 1.5 }} />
-                  <Typography variant="h6">Cadastrar Sala</Typography>
-                </Box>
-                <CardContent>
-                  <Typography variant="body1" color="textSecondary">
-                    Adicione novas salas definindo o nome e a capacidade máxima de
-                    pessoas.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Card
-                onClick={handleCardClick(setReservaModalOpen)}
-                sx={{
-                  height: "100%",
-                  cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 8px 16px rgba(63, 81, 181, 0.15)",
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    bgcolor: theme.palette.primary.main,
-                    color: "white",
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <EventAvailableIcon sx={{ mr: 1.5 }} />
-                  <Typography variant="h6">Criar Reserva</Typography>
-                </Box>
-                <CardContent>
-                  <Typography variant="body1" color="textSecondary">
-                    Agende uma reserva selecionando o usuário, sala e horário desejado.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Card
-                onClick={handleCardClick(setBuscaCpfModalOpen)}
-                sx={{
-                  height: "100%",
-                  cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 8px 16px rgba(63, 81, 181, 0.15)",
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    bgcolor: theme.palette.primary.main,
-                    color: "white",
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <SearchIcon sx={{ mr: 1.5 }} />
-                  <Typography variant="h6">Buscar Usuário por CPF</Typography>
-                </Box>
-                <CardContent>
-                  <Typography variant="body1" color="textSecondary">
-                    Localize um usuário específico usando o número de CPF.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-
-          {/* Lista de reservas */}
-          <Card>
-            <Box
-              sx={{
-                bgcolor: theme.palette.primary.main,
-                color: "white",
-                p: 2,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <TableViewIcon sx={{ mr: 1.5 }} />
-              <Typography variant="h6">Reservas Agendadas</Typography>
-            </Box>
-            <CardContent sx={{ p: 0 }}>
-              {loading ? (
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    p: 4,
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              ) : reservas.length > 0 ? (
-                <Table>
-                  <TableHead
-                    sx={{
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    }}
-                  >
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 500 }}>Usuário</TableCell>
-                      <TableCell sx={{ fontWeight: 500 }}>Sala</TableCell>
-                      <TableCell sx={{ fontWeight: 500 }}>Data e Hora</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {reservas.map((reserva) => {
-                      const usuario = usuarios.find(
-                        (u) => u.id === reserva.usuarioId
-                      );
-                      const sala = salas.find(
-                        (s) => s.id === reserva.salaId
-                      );
-
-                      return (
-                        <TableRow
-                          key={reserva.id}
-                          sx={{
-                            "&:hover": {
-                              backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                            },
-                          }}
-                        >
-                          <TableCell>
-                            {usuario ? usuario.nome : reserva.usuarioId}
-                          </TableCell>
-                          <TableCell>
-                            {sala ? sala.nome : reserva.salaId}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(reserva.dataHora).toLocaleString()}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <Box sx={{ p: 4, textAlign: "center" }}>
-                  <Typography variant="body1" color="textSecondary">
-                    Nenhuma reserva encontrada.
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Modal de Usuário */}
-          <ModalDialog
-            open={usuarioModalOpen}
-            onClose={handleModalClose(setUsuarioModalOpen, clearForm)}
-            title="Cadastrar Usuário"
-            icon={<PersonAddIcon />}
-          >
-            <form
-              onSubmit={handleSubmitUsuario}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Nome"
-                    name="nome"
-                    value={form.nome}
-                    onChange={handleChange}
-                    variant="outlined"
-                    size="small"
-                    required
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    variant="outlined"
-                    size="small"
-                    required
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="CPF"
-                    name="cpf"
-                    value={form.cpf}
-                    onChange={handleChange}
-                    variant="outlined"
-                    size="small"
-                    inputProps={{ maxLength: 14 }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Data de Nascimento"
-                    name="dataNascimento"
-                    type="date"
-                    value={form.dataNascimento}
-                    onChange={handleChange}
-                    InputLabelProps={{ shrink: true }}
-                    variant="outlined"
-                    size="small"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-
-                {/* Seção de Endereço */}
-                <Grid item xs={12} sx={{ mt: 1 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                    <HomeIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                    <Typography variant="subtitle1">
-                      Informações de Endereço
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={3}>
+                  {/* Formulário de cadastro de usuários */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                      Cadastrar Usuário
                     </Typography>
-                  </Box>
-                  <Divider sx={{ mb: 2 }} />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Cidade"
-                    name="cidade"
-                    value={form.endereco.cidade}
-                    onChange={handleEnderecoChange}
-                    variant="outlined"
-                    size="small"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Estado"
-                    name="estado"
-                    value={form.endereco.estado}
-                    onChange={handleEnderecoChange}
-                    variant="outlined"
-                    size="small"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="CEP"
-                    name="cep"
-                    value={form.endereco.cep}
-                    onChange={handleEnderecoChange}
-                    variant="outlined"
-                    size="small"
-                    inputProps={{ maxLength: 9 }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Rua"
-                    name="rua"
-                    value={form.endereco.rua}
-                    onChange={handleEnderecoChange}
-                    variant="outlined"
-                    size="small"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-              </Grid>
-
-              <DialogActions>
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearForm();
-                    setUsuarioModalOpen(false);
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="submit"
-                  startIcon={<AddIcon />}
-                  disabled={loading}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {loading ? (
-                    <CircularProgress size={24} />
-                  ) : (
-                    "Cadastrar Usuário"
-                  )}
-                </Button>
-              </DialogActions>
-            </form>
-          </ModalDialog>
-
-          {/* Modal de Sala */}
-          <ModalDialog
-            open={salaModalOpen}
-            onClose={handleModalClose(setSalaModalOpen, clearSalaForm)}
-            title="Cadastrar Sala"
-            icon={<MeetingRoomIcon />}
-          >
-            <form
-              onSubmit={handleSubmitSala}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={8}>
-                  <TextField
-                    fullWidth
-                    label="Nome da Sala"
-                    name="nome"
-                    value={salaForm.nome}
-                    onChange={(e) =>
-                      setSalaForm({ ...salaForm, nome: e.target.value })
-                    }
-                    variant="outlined"
-                    size="small"
-                    required
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    label="Capacidade"
-                    name="capacidade"
-                    type="number"
-                    value={salaForm.capacidade}
-                    onChange={(e) =>
-                      setSalaForm({
-                        ...salaForm,
-                        capacidade: e.target.value,
-                      })
-                    }
-                    variant="outlined"
-                    size="small"
-                    required
-                    InputProps={{ inputProps: { min: 1 } }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Grid>
-              </Grid>
-
-              <Box sx={{ mt: 4, mb: 2 }}>
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, color: theme.palette.primary.main }}
-                >
-                  Salas Disponíveis
-                </Typography>
-                {salas.length > 0 ? (
-                  <Table>
-                    <TableHead
-                      sx={{
-                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      }}
-                    >
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 500 }}>Nome</TableCell>
-                        <TableCell sx={{ fontWeight: 500 }}>Capacidade</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {salas.map((sala) => (
-                        <TableRow
-                          key={sala.id}
-                          sx={{
-                            "&:hover": {
-                              backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                            },
-                          }}
-                        >
-                          <TableCell>{sala.nome}</TableCell>
-                          <TableCell>{sala.capacidade}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <Box
-                    sx={{
-                      p: 2,
-                      textAlign: "center",
-                      bgcolor: "#f9f9f9",
-                      borderRadius: 1,
-                    }}
-                  >
-                    <Typography variant="body1" color="textSecondary">
-                      Nenhuma sala cadastrada.
+                    <form onSubmit={handleSubmitUsuario}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Nome"
+                            name="nome"
+                            value={usuarioForm.nome}
+                            onChange={handleUsuarioChange}
+                            required
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Email"
+                            name="email"
+                            type="email"
+                            value={usuarioForm.email}
+                            onChange={handleUsuarioChange}
+                            required
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="CPF"
+                            name="cpf"
+                            value={usuarioForm.cpf}
+                            onChange={handleUsuarioChange}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Data de Nascimento"
+                            name="dataNascimento"
+                            type="date"
+                            value={usuarioForm.dataNascimento}
+                            onChange={handleUsuarioChange}
+                            InputLabelProps={{ shrink: true }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Cidade"
+                            name="cidade"
+                            value={usuarioForm.endereco.cidade}
+                            onChange={handleEnderecoChange}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Estado"
+                            name="estado"
+                            value={usuarioForm.endereco.estado}
+                            onChange={handleEnderecoChange}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="CEP"
+                            name="cep"
+                            value={usuarioForm.endereco.cep}
+                            onChange={handleEnderecoChange}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Rua"
+                            name="rua"
+                            value={usuarioForm.endereco.rua}
+                            onChange={handleEnderecoChange}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                              type="submit"
+                              variant="contained"
+                              startIcon={<AddIcon />}
+                              disabled={loading}
+                            >
+                              {loading ? <CircularProgress size={24} /> : "Cadastrar Usuário"}
+                            </Button>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </form>
+                  </Grid>
+                  
+                  {/* Tabela de usuários */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                      Usuários Cadastrados
                     </Typography>
-                  </Box>
-                )}
-              </Box>
-
-              <DialogActions>
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearSalaForm();
-                    setSalaModalOpen(false);
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="submit"
-                  startIcon={<AddIcon />}
-                  disabled={loading}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {loading ? <CircularProgress size={24} /> : "Cadastrar Sala"}
-                </Button>
-              </DialogActions>
-            </form>
-          </ModalDialog>
-
-          {/* Modal de Reserva */}
-          <ModalDialog
-            open={reservaModalOpen}
-            onClose={handleModalClose(setReservaModalOpen, clearReservaForm)}
-            title="Criar Reserva"
-            icon={<EventAvailableIcon />}
-          >
-            <form
-              onSubmit={handleSubmitReserva}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Usuário"
-                    name="usuarioId"
-                    value={reservaForm.usuarioId}
-                    onChange={(e) =>
-                      setReservaForm({
-                        ...reservaForm,
-                        usuarioId: e.target.value,
-                      })
-                    }
-                    variant="outlined"
-                    size="small"
-                    required
-                    MenuProps={{
-                      PaperProps: {
-                        style: { maxHeight: 300 },
-                      },
-                    }}
-                  >
-                    {usuarios.length > 0 ? (
-                      usuarios.map((user) => (
-                        <MenuItem key={user.id} value={user.id}>
-                          {user.nome}
-                        </MenuItem>
-                      ))
+                    {loading ? (
+                      <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : usuarios.length > 0 ? (
+                      <Box sx={{ overflowX: "auto" }}>
+                        <Table size="small">
+                          <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+                            <TableRow>
+                              <TableCell sx={{ fontWeight: "bold" }}>ID</TableCell>
+                              <TableCell sx={{ fontWeight: "bold" }}>Nome</TableCell>
+                              <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
+                              <TableCell sx={{ fontWeight: "bold" }}>CPF</TableCell>
+                              <TableCell sx={{ fontWeight: "bold" }}>Data Nascimento</TableCell>
+                              <TableCell sx={{ fontWeight: "bold" }}>Endereço</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {usuarios.map((usuario) => (
+                              <TableRow key={usuario.id} hover>
+                                <TableCell>{usuario.id}</TableCell>
+                                <TableCell>{usuario.nome}</TableCell>
+                                <TableCell>{usuario.email}</TableCell>
+                                <TableCell>{usuario.cpf || "-"}</TableCell>
+                                <TableCell>
+                                  {usuario.dataNascimento
+                                    ? new Date(usuario.dataNascimento).toLocaleDateString()
+                                    : "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {usuario.endereco?.cidade && usuario.endereco?.estado
+                                    ? `${usuario.endereco.cidade}/${usuario.endereco.estado}`
+                                    : "-"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Box>
                     ) : (
-                      <MenuItem disabled>Nenhum usuário cadastrado</MenuItem>
+                      <Box sx={{ textAlign: "center", py: 2 }}>
+                        <Typography color="textSecondary">
+                          Nenhum usuário cadastrado.
+                        </Typography>
+                      </Box>
                     )}
-                  </TextField>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Sala"
-                    name="salaId"
-                    value={reservaForm.salaId}
-                    onChange={(e) =>
-                      setReservaForm({
-                        ...reservaForm,
-                        salaId: e.target.value,
-                      })
-                    }
-                    variant="outlined"
-                    size="small"
-                    required
-                    MenuProps={{
-                      PaperProps: {
-                        style: { maxHeight: 300 },
-                      },
-                    }}
-                  >
-                    {salas.length > 0 ? (
-                      salas.map((sala) => (
-                        <MenuItem key={sala.id} value={sala.id}>
-                          {sala.nome} (Cap: {sala.capacidade})
-                        </MenuItem>
-                      ))
+              </AccordionDetails>
+            </Accordion>
+          </Paper>
+          
+          {/* Seção de Salas */}
+          <Paper sx={{ mb: 3, overflow: 'hidden' }}>
+            <Accordion defaultExpanded>
+              <AccordionSummary 
+                expandIcon={<ExpandMoreIcon />}
+                sx={{ 
+                  bgcolor: theme.palette.primary.main, 
+                  color: 'white',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <MeetingRoomIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6">Salas</Typography>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={3}>
+                  {/* Formulário de cadastro de salas */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                      Cadastrar Sala
+                    </Typography>
+                    <form onSubmit={handleSubmitSala}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={8}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Nome da Sala"
+                            name="nome"
+                            value={salaForm.nome}
+                            onChange={handleSalaChange}
+                            required
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Capacidade"
+                            name="capacidade"
+                            type="number"
+                            value={salaForm.capacidade}
+                            onChange={handleSalaChange}
+                            required
+                            InputProps={{ inputProps: { min: 1 } }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                              type="submit"
+                              variant="contained"
+                              startIcon={<AddIcon />}
+                              disabled={loading}
+                            >
+                              {loading ? <CircularProgress size={24} /> : "Cadastrar Sala"}
+                            </Button>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </form>
+                  </Grid>
+                  
+                  {/* Tabela de salas */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                      Salas Cadastradas
+                    </Typography>
+                    {loading ? (
+                      <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : salas.length > 0 ? (
+                      <Table size="small">
+                        <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: "bold" }}>ID</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Nome</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Capacidade</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {salas.map((sala) => (
+                            <TableRow key={sala.id} hover>
+                              <TableCell>{sala.id}</TableCell>
+                              <TableCell>{sala.nome}</TableCell>
+                              <TableCell>{sala.capacidade}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     ) : (
-                      <MenuItem disabled>Nenhuma sala cadastrada</MenuItem>
+                      <Box sx={{ textAlign: "center", py: 2 }}>
+                        <Typography color="textSecondary">
+                          Nenhuma sala cadastrada.
+                        </Typography>
+                      </Box>
                     )}
-                  </TextField>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Data e Hora"
-                    type="datetime-local"
-                    name="dataHora"
-                    value={reservaForm.dataHora}
-                    onChange={(e) =>
-                      setReservaForm({
-                        ...reservaForm,
-                        dataHora: e.target.value,
-                      })
-                    }
-                    InputLabelProps={{ shrink: true }}
-                    variant="outlined"
-                    size="small"
-                    required
-                  />
+              </AccordionDetails>
+            </Accordion>
+          </Paper>
+          
+          {/* Seção de Reservas */}
+          <Paper sx={{ mb: 3, overflow: 'hidden' }}>
+            <Accordion defaultExpanded>
+              <AccordionSummary 
+                expandIcon={<ExpandMoreIcon />}
+                sx={{ 
+                  bgcolor: theme.palette.primary.main, 
+                  color: 'white',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <EventIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6">Reservas</Typography>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={3}>
+                  {/* Formulário de cadastro de reservas */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                      Cadastrar Reserva
+                    </Typography>
+                    <form onSubmit={handleSubmitReserva}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            fullWidth
+                            select
+                            size="small"
+                            label="Usuário"
+                            name="usuarioId"
+                            value={reservaForm.usuarioId}
+                            onChange={handleReservaChange}
+                            required
+                          >
+                            {usuarios.length > 0 ? (
+                              usuarios.map((usuario) => (
+                                <MenuItem key={usuario.id} value={usuario.id}>
+                                  {usuario.nome}
+                                </MenuItem>
+                              ))
+                            ) : (
+                              <MenuItem disabled>Nenhum usuário cadastrado</MenuItem>
+                            )}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            fullWidth
+                            select
+                            size="small"
+                            label="Sala"
+                            name="salaId"
+                            value={reservaForm.salaId}
+                            onChange={handleReservaChange}
+                            required
+                          >
+                            {salas.length > 0 ? (
+                              salas.map((sala) => (
+                                <MenuItem key={sala.id} value={sala.id}>
+                                  {sala.nome} (Cap: {sala.capacidade})
+                                </MenuItem>
+                              ))
+                            ) : (
+                              <MenuItem disabled>Nenhuma sala cadastrada</MenuItem>
+                            )}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Data e Hora"
+                            name="dataHora"
+                            type="datetime-local"
+                            value={reservaForm.dataHora}
+                            onChange={handleReservaChange}
+                            required
+                            InputLabelProps={{ shrink: true }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                              type="submit"
+                              variant="contained"
+                              startIcon={<AddIcon />}
+                              disabled={loading}
+                            >
+                              {loading ? <CircularProgress size={24} /> : "Cadastrar Reserva"}
+                            </Button>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </form>
+                  </Grid>
+                  
+                  {/* Tabela de reservas */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                      Reservas Cadastradas
+                    </Typography>
+                    {loading ? (
+                      <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : reservas.length > 0 ? (
+                      <Table size="small">
+                        <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: "bold" }}>ID</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Usuário</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Sala</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Data e Hora</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {reservas.map((reserva) => {
+                            const usuario = usuarios.find(u => u.id === reserva.usuarioId);
+                            const sala = salas.find(s => s.id === reserva.salaId);
+                            
+                            return (
+                              <TableRow key={reserva.id} hover>
+                                <TableCell>{reserva.id}</TableCell>
+                                <TableCell>
+                                  {usuario ? usuario.nome : reserva.usuarioId}
+                                </TableCell>
+                                <TableCell>
+                                  {sala ? sala.nome : reserva.salaId}
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(reserva.dataHora).toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <Box sx={{ textAlign: "center", py: 2 }}>
+                        <Typography color="textSecondary">
+                          Nenhuma reserva cadastrada.
+                        </Typography>
+                      </Box>
+                    )}
+                  </Grid>
                 </Grid>
-              </Grid>
-
-              <DialogActions>
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearReservaForm();
-                    setReservaModalOpen(false);
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="submit"
-                  disabled={loading}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {loading ? <CircularProgress size={24} /> : "Confirmar Reserva"}
-                </Button>
-              </DialogActions>
-            </form>
-          </ModalDialog>
-
-          {/* Modal de Busca por CPF */}
-          <ModalDialog
-            open={buscaCpfModalOpen}
-            onClose={handleModalClose(setBuscaCpfModalOpen)}
-            title="Buscar Usuário por CPF"
-            icon={<SearchIcon />}
-          >
-            <form
-              onSubmit={handleBuscarPorCpf}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <TextField
-                fullWidth
-                label="CPF"
-                name="cpf"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
-                variant="outlined"
-                size="small"
-                required
-                sx={{ mb: 2 }}
-              />
-
-              <DialogActions>
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCpf("");
-                    setBuscaCpfModalOpen(false);
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="submit"
-                  startIcon={<SearchIcon />}
-                  disabled={loading}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {loading ? <CircularProgress size={24} /> : "Buscar Usuário"}
-                </Button>
-              </DialogActions>
-            </form>
-          </ModalDialog>
+              </AccordionDetails>
+            </Accordion>
+          </Paper>
         </Container>
-      </div>
+      </Box>
     </ThemeProvider>
   );
 }
