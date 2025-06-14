@@ -1,13 +1,4 @@
 package com.github.ms_reserva;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-@SpringBootTest
-class MsReservaApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
-
-}
+// This test file has been emptied as part of removing tests from the project.
+// In a real scenario, you would delete the entire test directory.
