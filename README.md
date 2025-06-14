@@ -51,12 +51,10 @@ docker-compose up --build -d
 - **Senha**: `123`
 - **Bancos**: `db_usuario`, `db_sala`, `db_reserva`
 
-#### RabbitMQ Management
+#### RabbitMQ
 
 - **Usuário**: `admin`
 - **Senha**: `admin`
-
-## 📋 Exemplos de Uso
 
 ### Criando Usuário
 
@@ -96,17 +94,4 @@ docker-compose up --build -d
   "salaId": 1,
   "usuarioId": 1
 }
-```
-
-## 🐛 Logs para Depuração
-
-```bash
-# Logs em tempo real de todos os serviços
-docker-compose logs -f
-
-# Logs específicos por serviço
-docker-compose logs -f ms-usuario
-docker-compose logs -f ms-sala
-docker-compose logs -f ms-reserva
-docker-compose logs -f rabbitmq
 ```
